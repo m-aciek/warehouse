@@ -6,12 +6,21 @@ compile-pot:
 		-F babel.cfg \
 		--omit-header \
 		--output="warehouse/locale/messages.pot" \
-		warehouse
+		warehouse/accounts warehouse/views.py; \
+	PYTHONPATH=$(PWD) pybabel extract \
+	  -F babel.cfg \
+	  --omit-header \
+	  --output="warehouse/locale/messages-loggedin.pot" \
+	  warehouse/admin warehouse/manage warehouse/oidc warehouse/subscriptions;
 
 init-po:
 	cd ../../; \
 	pybabel init \
 		--input-file="warehouse/locale/messages.pot" \
+		--output-dir="warehouse/locale/" \
+		--locale="$(L)"; \
+	pybabel init \
+		--input-file="warehouse/locale/messages-loggedin.pot" \
 		--output-dir="warehouse/locale/" \
 		--locale="$(L)"
 
@@ -20,12 +29,20 @@ update-po:
 	pybabel update \
 		--input-file="warehouse/locale/messages.pot" \
 		--output-file="warehouse/locale/$(L)/LC_MESSAGES/messages.po" \
+		--locale="$(L)"; \
+	pybabel update \
+		--input-file="warehouse/locale/messages-loggedin.pot" \
+		--output-file="warehouse/locale/$(L)/LC_MESSAGES/messages-loggedin.po" \
 		--locale="$(L)"
 
 compile-po:
 	cd ../../; \
 	pybabel compile \
 		--input-file="warehouse/locale/$(L)/LC_MESSAGES/messages.po" \
+		--directory="warehouse/locale/" \
+		--locale="$(L)"; \
+	pybabel compile \
+		--input-file="warehouse/locale/$(L)/LC_MESSAGES/messages-loggedin.po" \
 		--directory="warehouse/locale/" \
 		--locale="$(L)"
 
@@ -39,7 +56,7 @@ build-mos: compile-pot
 translations: compile-pot
 ifneq ($(GITHUB_ACTIONS), false)
 	cd ../../; \
-	git diff --quiet ./warehouse/locale/messages.pot || (echo "There are outstanding translations, run 'make translations' and commit the changes."; exit 1)
+	git diff --quiet ./warehouse/locale/messages.pot && git diff --quiet ./warehouse/locale/messages-loggedin.pot || (echo "There are outstanding translations, run 'make translations' and commit the changes."; exit 1)
 else
 endif
 
